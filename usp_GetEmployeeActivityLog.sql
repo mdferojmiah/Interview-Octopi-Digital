@@ -12,7 +12,7 @@ GO
 -- exec usp_GetEmployeeActivityLog '151', '2020-01-01'
 
 CREATE OR ALTER PROCEDURE usp_GetEmployeeActivityLog 
-	@EmployeeID INT = null,
+	@EmployeeID BIGINT = null,
 	@StartDate DATETIME = null,
 	@EndDate DATETIME = null,
 	@MaxRow INT = 100
