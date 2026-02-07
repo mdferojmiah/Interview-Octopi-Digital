@@ -1,0 +1,2 @@
+# ignore the database backups cause they are large files and not needed in version control also they are sensitive
+*.bak
