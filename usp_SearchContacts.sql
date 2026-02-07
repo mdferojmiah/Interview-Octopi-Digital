@@ -7,7 +7,7 @@ GO
 -- Create date: <07 Feb 2026>
 -- Description:	<searches for contacts based on name or email address, incorporating support for pagination. Returns both the search results and the total count of matching records>
 -- =============================================
--- table used Main.Contact
+-- table used Main.Contact, Main.Customer, Main.Vendor
 
 -- exec usp_SearchContacts 'ABC', '3'
 
