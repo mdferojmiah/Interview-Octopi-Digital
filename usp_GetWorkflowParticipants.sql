@@ -24,18 +24,18 @@ BEGIN
 	if @WorkflowId = '' set @WorkflowId = null
 
 	select 
-	WP.Id as ParticipantId,
-	WP.Name as ParticipantName,
-	WW.Name as WorkFlowName,
-	WP.WorkflowType,
-	WP.[Order],
-	ME.FirstName as EmpFirstName,
-	ME.LastName as EmpLastName,
-	ME.Email as EmpEmail,
-	WP.Archived
+		WP.Id as ParticipantId,
+		WP.Name as ParticipantName,
+		WW.Name as WorkFlowName,
+		WP.WorkflowType,
+		WP.[Order],
+		ME.FirstName as EmpFirstName,
+		ME.LastName as EmpLastName,
+		ME.Email as EmpEmail,
+		WP.Archived
 	from Workflow.Participant WP
-	left join Workflow.Workflow WW on WW.Id = WP.WorkflowId
-	left join Main.Employee ME on ME.Id = WP.UserId
+		left join Workflow.Workflow WW on WW.Id = WP.WorkflowId
+		left join Main.Employee ME on ME.Id = WP.UserId
 	where (@WorkflowId is null or WP.WorkflowId = @WorkflowId)
 	order by WP.[Order] asc
     
