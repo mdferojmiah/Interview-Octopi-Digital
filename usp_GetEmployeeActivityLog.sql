@@ -9,6 +9,7 @@ GO
 -- Author:		<Feroj Miah>
 -- Create date: <07 Feb 2026>
 -- Description:	<Retrieves employee activity records based on Employee ID, a defined date range, and a maximum row limit. The parameters are optional>
+-- **special Note** : <1st I've solved the problem using join operation. But it was taking huge execution time. I solved this problem using temp table>
 -- =============================================
 -- table used Main.ActivityLog, Main.Employee
 
@@ -33,32 +34,99 @@ BEGIN
 	if @EndDate = '' set @EndDate = null
 	if @MaxRow = '' set @MaxRow = 100
 
-    select top (@MaxRow)
-		AL.Id as ActivityId,
-		AL.ActivityType,
-		AL.Description,
-		AL.UpdatedOn as ActivityDate,
-		AL.Action,
-		E.FirstName + ' ' + isnull(E.LastName, '') as EmployeeName,
-		E.Email,
-		AL.IP,
-		A.Name as AccountName,
-		D.Name as DocumentType,
-		P.Name as ProductName,
-		V.Name as VendorName,
-		C.Name as CustomerName,
-		L.Name as LocationName
-	from Main.ActivityLog AL
-	left join Main.Employee E on AL.UpdatedBy = E.Id
-	left join Main.Account A on A.Id = AL.AccountId
-	left join Main.DocumentType D on D.Id = AL.DocumentTypeId
-	left join Main.[Product] P on P.Id = AL.ProductId
-	left join Main.Vendor V on V.Id = AL.VendorId
-	left join Main.Customer C on C.Id = AL.CustomerId
-	left join Main.[Location] L on L.Id = AL.LocationId
-	where 
-		(@EmployeeID is null or AL.UpdatedBy = @EmployeeID)
-		and (@StartDate is null or AL.UpdatedOn >= @StartDate)
-		and (@EndDate is null or AL.UpdatedOn <= @EndDate)
-	order by AL.UpdatedOn desc
+	-- creating the Temp Table
+	CREATE TABLE #EmployeeActivityLog (
+		ActivityId BIGINT,
+		ActivityType INT,
+		Description NVARCHAR(250),
+		ActivityDate DATETIME,
+		Action INT,
+		IP NVARCHAR(45),
+		-- temp Ids for the update joins
+		_EmpId BIGINT,
+		_AccId BIGINT,
+		_DocId BIGINT,
+		_ProdId BIGINT,
+		_VendId BIGINT,
+		_CustId BIGINT,
+		_LocId BIGINT,
+		EmployeeName NVARCHAR(100),
+		Email NVARCHAR(320),
+		AccountName NVARCHAR(250),
+		DocumentType NVARCHAR(500),
+		ProductName NVARCHAR(200),
+		VendorName NVARCHAR(300),
+		CustomerName NVARCHAR(200),
+		LocationName NVARCHAR(100)
+	)
+
+	-- inserting from Main.ActivityLog table data and Foreign Keys)
+	INSERT INTO #EmployeeActivityLog (
+		ActivityId, ActivityType, Description, ActivityDate, Action, IP, 
+		_EmpId, _AccId, _DocId, _ProdId, _VendId, _CustId, _LocId
+	)
+	SELECT TOP (@MaxRow) 
+		AL.Id, AL.ActivityType, AL.Description, AL.UpdatedOn, AL.Action, AL.IP,
+		AL.UpdatedBy, AL.AccountId, AL.DocumentTypeId, AL.ProductId, AL.VendorId, AL.CustomerId, AL.LocationId
+	FROM Main.ActivityLog AL
+	WHERE (@EmployeeID IS NULL OR AL.UpdatedBy = @EmployeeID)
+	  AND (@StartDate IS NULL OR AL.UpdatedOn >= @StartDate)
+	  AND (@EndDate IS NULL OR AL.UpdatedOn <= @EndDate)
+	ORDER BY AL.UpdatedOn DESC
+	
+	-- from Main.Employee table
+	UPDATE #EmployeeActivityLog
+	SET EmployeeName = E.FirstName + ' ' + ISNULL(E.LastName, ''),
+	    Email = E.Email
+	FROM #EmployeeActivityLog T
+	INNER JOIN Main.Employee E ON T._EmpId = E.Id
+
+	-- from Main.Account table
+	UPDATE #EmployeeActivityLog
+	SET AccountName = A.Name
+	FROM #EmployeeActivityLog T
+	INNER JOIN Main.Account A ON T._AccId = A.Id
+
+	-- from Main.DocumentType table
+	UPDATE #EmployeeActivityLog
+	SET DocumentType = D.Name
+	FROM #EmployeeActivityLog T
+	INNER JOIN Main.DocumentType D ON T._DocId = D.Id
+
+	-- from Main.Product table
+	UPDATE #EmployeeActivityLog
+	SET ProductName = P.Name
+	FROM #EmployeeActivityLog T
+	INNER JOIN Main.Product P ON T._ProdId = P.Id
+
+	-- from Main.Vendor table
+	UPDATE #EmployeeActivityLog
+	SET VendorName = V.Name
+	FROM #EmployeeActivityLog T
+	INNER JOIN Main.Vendor V ON T._VendId = V.Id
+
+	-- from Main.Customer table
+	UPDATE #EmployeeActivityLog
+	SET CustomerName = C.Name
+	FROM #EmployeeActivityLog T
+	INNER JOIN Main.Customer C ON T._CustId = C.Id
+
+	-- from Main.Location table
+	UPDATE #EmployeeActivityLog
+	SET LocationName = L.Name
+	FROM #EmployeeActivityLog T
+	INNER JOIN Main.Location L ON T._LocId = L.Id
+
+	-- final selection without the tempIds
+	SELECT 
+		ActivityId, ActivityType, Description, ActivityDate, Action, IP,
+		EmployeeName, Email, AccountName, DocumentType, ProductName, 
+		VendorName, CustomerName, LocationName
+	FROM #EmployeeActivityLog
+	ORDER BY ActivityDate DESC
+
+	-- droping the temp table
+	DROP TABLE #EmployeeActivityLog
+	
 END
+GO
