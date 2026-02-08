@@ -1,3 +1,6 @@
+USE [DCN-Miju]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_GetEmployeeActivityLog]    Script Date: 2/8/2026 4:36:58 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -10,6 +13,7 @@ GO
 -- table used Main.ActivityLog, Main.Employee
 
 -- exec usp_GetEmployeeActivityLog '151', '2020-01-01'
+
 
 CREATE OR ALTER PROCEDURE usp_GetEmployeeActivityLog 
 	@EmployeeID BIGINT = null,
@@ -30,20 +34,31 @@ BEGIN
 	if @MaxRow = '' set @MaxRow = 100
 
     select top (@MaxRow)
-		E.FirstName,
-		E.LastName,
-		E.Email,
+		AL.Id as ActivityId,
 		AL.ActivityType,
 		AL.Description,
 		AL.UpdatedOn as ActivityDate,
 		AL.Action,
-		AL.IP
+		E.FirstName + ' ' + isnull(E.LastName, '') as EmployeeName,
+		E.Email,
+		AL.IP,
+		A.Name as AccountName,
+		D.Name as DocumentType,
+		P.Name as ProductName,
+		V.Name as VendorName,
+		C.Name as CustomerName,
+		L.Name as LocationName
 	from Main.ActivityLog AL
 	left join Main.Employee E on AL.UpdatedBy = E.Id
+	left join Main.Account A on A.Id = AL.AccountId
+	left join Main.DocumentType D on D.Id = AL.DocumentTypeId
+	left join Main.[Product] P on P.Id = AL.ProductId
+	left join Main.Vendor V on V.Id = AL.VendorId
+	left join Main.Customer C on C.Id = AL.CustomerId
+	left join Main.[Location] L on L.Id = AL.LocationId
 	where 
 		(@EmployeeID is null or AL.UpdatedBy = @EmployeeID)
 		and (@StartDate is null or AL.UpdatedOn >= @StartDate)
 		and (@EndDate is null or AL.UpdatedOn <= @EndDate)
 	order by AL.UpdatedOn desc
 END
-GO
