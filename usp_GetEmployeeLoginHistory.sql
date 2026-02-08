@@ -4,7 +4,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
 -- Author:		<Feroj Miah>
--- Create date: <07 Feb 2026>
+-- Create date: <08 Feb 2026>
 -- Description:	<Returns recent login dates with an option to filter for inactive employees>
 -- =============================================
 -- table used Main.Employee, Main.LoginHistory
@@ -36,16 +36,16 @@ BEGIN
         e.Email,
         MAX(l.[Date]) AS LastLoginDate
 	from Main.Employee e
-	left join Main.LoginHistory l on l.UserId = e.Id
-	where 
+		left join Main.LoginHistory l on l.UserId = e.Id
+	where
 		(@FromDate is null or l.[Date] >= @FromDate)
 		and (@ToDate is null or l.[Date] <= @ToDate)
 	group by
 		e.Id, e.FirstName, e.LastName, e.Email
 	having 
 		(@ShowInactiveOnly = 0)
-		or (@ShowInactiveOnly = 1 and max(l.[Date]) < @InactiveThresholdDate)
-		or (@ShowInactiveOnly = 1 and max(l.[Date]) is null)
+		or (max(l.[Date]) < @InactiveThresholdDate)
+		or (max(l.[Date]) is null)
 	order by LastLoginDate desc
     
 END
